@@ -12,13 +12,13 @@ SubTracker is a simple and intuitive iOS-only app to help you keep track of your
 ## 📸 Screenshots
 
 ### ➕ Add Subscription
-![Add Subscription](add.png)
+![Add Subscription](assets/add.png)
 
 ### 🏠 Home View
-![Home Screen](home.png)
+![Home Screen](assets/home.png)
 
 ### 📊 Metrics
-![Metrics](metrics.png)
+![Metrics](assets/metrics.png)
 
 ## 📲 Platform
 
