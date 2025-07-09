@@ -1,5 +1,7 @@
 # 📱 SubTracker – iOS Subscription Tracker
 
+**Early beta**
+
 SubTracker is a simple and intuitive iOS-only app to help you keep track of your subscriptions. Whether it's Netflix, Spotify, or your gym membership, SubTracker keeps everything in one place so you never miss a renewal.
 
 ## 🧩 Features
