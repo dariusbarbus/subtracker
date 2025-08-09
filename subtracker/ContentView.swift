@@ -13,13 +13,15 @@ struct Subscription: Codable, Identifiable, Equatable {
     var amount: Double
     var date: Date
     var frequency: String
+    var isArchived: Bool = false
 
-    init(id: UUID = UUID(), name: String, amount: Double, date: Date, frequency: String) {
+    init(id: UUID = UUID(), name: String, amount: Double, date: Date, frequency: String, isArchived: Bool = false) {
         self.id = id
         self.name = name
         self.amount = amount
         self.date = date
         self.frequency = frequency
+        self.isArchived = isArchived
     }
 }
 
@@ -63,36 +65,40 @@ struct ContentView: View {
 
     // Calculates the total monthly cost, adjusting for frequency
     var totalMontlyAmount: Double {
-        subscriptions.reduce(0) { total, sub in
-            switch sub.frequency {
-            case "Weekly":
-                return total + (sub.amount * 4)
-            case "Biweekly":
-                return total + (sub.amount * 2)
-            case "Monthly":
-                return total + sub.amount
-            default:
-                return total // "Yearly" or unrecognized frequencies contribute nothing
+        subscriptions
+            .filter { !$0.isArchived }
+            .reduce(0) { total, sub in
+                switch sub.frequency {
+                case "Weekly":
+                    return total + (sub.amount * 4)
+                case "Biweekly":
+                    return total + (sub.amount * 2)
+                case "Monthly":
+                    return total + sub.amount
+                default:
+                    return total // "Yearly" or unrecognized frequencies contribute nothing
+                }
             }
-        }
     }
 
     // Calculates the total yearly cost including both monthly-based and yearly subscriptions
     var totalYearlyAmount: Double {
-        subscriptions.reduce(0) { total, sub in
-            switch sub.frequency {
-            case "Weekly":
-                return total + (sub.amount * 4 * 12)
-            case "Biweekly":
-                return total + (sub.amount * 2 * 12)
-            case "Monthly":
-                return total + (sub.amount * 12)
-            case "Yearly":
-                return total + sub.amount
-            default:
-                return total
+        subscriptions
+            .filter { !$0.isArchived }
+            .reduce(0) { total, sub in
+                switch sub.frequency {
+                case "Weekly":
+                    return total + (sub.amount * 4 * 12)
+                case "Biweekly":
+                    return total + (sub.amount * 2 * 12)
+                case "Monthly":
+                    return total + (sub.amount * 12)
+                case "Yearly":
+                    return total + sub.amount
+                default:
+                    return total
+                }
             }
-        }
     }
 
     // Calculates the next due date based on frequency
@@ -115,6 +121,9 @@ struct ContentView: View {
     
     // MARK: - Body
     var body: some View {
+        let activeSubscriptionCount = subscriptions.filter { !$0.isArchived }.count
+
+        
         NavigationStack {
             VStack(alignment: .leading) {
                 // main title with settings button
@@ -123,10 +132,6 @@ struct ContentView: View {
                         Text("Subscriptions")
                             .font(.largeTitle)
                             .bold()
-                        Text("Active")
-                            .padding()
-                            .font(.title3)
-                            .foregroundColor(.secondary)
                     }
                     Spacer()
                     Button(action: {
@@ -141,6 +146,8 @@ struct ContentView: View {
                 .padding(.horizontal)
                 
                 // MARK: - Subscription List or Empty Message
+                let activeSubscriptions = subscriptions.enumerated().filter { !$0.element.isArchived }
+                let archivedSubscriptions = subscriptions.enumerated().filter { $0.element.isArchived }
                 if subscriptions.isEmpty {
                     // Display a placeholder message when there are no subscriptions
                     VStack {
@@ -153,46 +160,74 @@ struct ContentView: View {
                         Spacer()
                     }
                 } else {
-                    // Show a list of existing subscriptions
                     List {
-                        ForEach(subscriptions.indices, id: \.self) { index in
-                            let sub = subscriptions[index]
-                            VStack(alignment: .leading) {
-                                Text(sub.name)
-                                    .font(.headline)
-
-                                Text(String(format: "$%.2f", sub.amount))
-
-                                Text("Due: \(sub.date.formatted(date: .abbreviated, time: .omitted))")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                        // Active section
+                        Section(header: Text("Active").textCase(nil).font(.title3).foregroundColor(.secondary)) {
+                            ForEach(activeSubscriptions, id: \.offset) { (index, sub) in
+                                VStack(alignment: .leading) {
+                                    Text(sub.name)
+                                        .font(.headline)
+                                    Text(String(format: "$%.2f", sub.amount))
+                                    Text("Due: \(sub.date.formatted(date: .abbreviated, time: .omitted))")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                .onTapGesture {
+                                    editingSubscriptionIndex = index
+                                }
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    Button {
+                                        subscriptions[index].isArchived = true
+                                    } label: {
+                                        Text("Archive")
+                                    }
+                                    .tint(.orange)
+                                }
                             }
-                            .onTapGesture {
-                                editingSubscriptionIndex = index
+                            .onDelete { indices in
+                                withAnimation {
+                                    let realIndices = indices.map { activeSubscriptions[$0].offset }
+                                    subscriptions.remove(atOffsets: IndexSet(realIndices))
+                                }
                             }
                         }
-                        .onDelete { indices in
-                            // Allows users to delete subscriptions from the list with animation
-                            withAnimation {
-                                subscriptions.remove(atOffsets: indices)
+                        // Archive section
+                        if !archivedSubscriptions.isEmpty {
+                            Section(header: Text("Archive").textCase(nil).font(.title3).foregroundColor(.secondary)) {
+                                ForEach(archivedSubscriptions, id: \.offset) { (index, sub) in
+                                    VStack(alignment: .leading) {
+                                        Text(sub.name)
+                                            .font(.headline)
+                                        Text(String(format: "$%.2f", sub.amount))
+                                        Text("Due: \(sub.date.formatted(date: .abbreviated, time: .omitted))")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .onTapGesture {
+                                        editingSubscriptionIndex = index
+                                    }
+                                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                        Button {
+                                            subscriptions[index].isArchived = false
+                                        } label: {
+                                            Text("Unarchive")
+                                        }
+                                        .tint(.green)
+                                    }
+                                }
+                                .onDelete { indices in
+                                    withAnimation {
+                                        let realIndices = indices.map { archivedSubscriptions[$0].offset }
+                                        subscriptions.remove(atOffsets: IndexSet(realIndices))
+                                    }
+                                }
                             }
                         }
                     }
                 }
-                
-                Spacer()
-                
-                // archive title
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Archive")
-                        .padding()
-                        .font(.title3)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.horizontal)
-
                 Spacer()
 
+                
                 // MARK: - Bottom Bar with Metrics, Count, and Add Button
                 HStack {
                     // Button to navigate to the MetricsView
@@ -212,7 +247,7 @@ struct ContentView: View {
                     Text(
                         subscriptions.count == 0
                         ? "No subscriptions"
-                        : "\(subscriptions.count) \(subscriptions.count == 1 ? "subscription" : "subscriptions")"
+                        : "\(activeSubscriptionCount) \(activeSubscriptionCount == 1 ? "active subscription" : "active subscriptions")"
                     )
                     .font(.footnote)
                     .foregroundColor(.secondary)
@@ -239,7 +274,7 @@ struct ContentView: View {
                 MetricsView(
                     totalMontlyAmount: totalMontlyAmount,
                     totalYearlyAmount: totalYearlyAmount,
-                    subscriptionsCount: subscriptions.count
+                    subscriptionsCount: activeSubscriptionCount
                 )
             }
             // Navigate to ConfigurationView when showSettings is true
@@ -265,7 +300,7 @@ struct ContentView: View {
                     initialDate: sub.date,
                     initialFrequency: sub.frequency
                 ) { name, amount, date, frequency in
-                    subscriptions[index] = Subscription(id: sub.id, name: name, amount: amount, date: date, frequency: frequency)
+                    subscriptions[index] = Subscription(id: sub.id, name: name, amount: amount, date: date, frequency: frequency, isArchived: sub.isArchived)
                 }
             } else {
                 AddSubscriptionView { name, amount, date, frequency in

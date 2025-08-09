@@ -9,6 +9,16 @@ import SwiftUI
 
 struct ConfigurationView: View {
     @AppStorage("selectedTheme") private var selectedTheme: String = "system"
+    @Environment(\.colorScheme) var colorScheme
+
+    private var colorSchemePreference: ColorScheme? {
+        switch selectedTheme {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil
+        }
+    }
+
     var body: some View {
         Form {
             Section(header: Text("Appearance")) {
@@ -20,6 +30,7 @@ struct ConfigurationView: View {
                 .pickerStyle(.segmented)
             }
         }
+        .preferredColorScheme(colorSchemePreference)
         .navigationTitle("Configuration")
     }
 }
