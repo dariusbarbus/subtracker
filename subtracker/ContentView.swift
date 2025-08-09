@@ -114,6 +114,7 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading) {
+                // main title
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Subscriptions")
                         .font(.largeTitle)
@@ -157,6 +158,16 @@ struct ContentView: View {
                         }
                     }
                 }
+                
+                Spacer()
+                
+                // archive title
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Archive")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal)
 
                 Spacer()
 
