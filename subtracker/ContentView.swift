@@ -286,8 +286,10 @@ struct ContentView: View {
                 }
                 .padding()
             }
-            .background(Color(.systemGray6).ignoresSafeArea())
-
+            .background(Color(UIColor { traitCollection in
+                traitCollection.userInterfaceStyle == .dark ? .systemBackground : .systemGray6
+            }).ignoresSafeArea())
+            
             // Navigate to MetricsView when showMetrics is true
             .navigationDestination(isPresented: $showMetrics) {
                 MetricsView(
