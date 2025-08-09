@@ -193,8 +193,8 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        // Archive section only when expanded
-                        if archiveExpanded && !archivedSubscriptions.isEmpty {
+                        // Archive section always shown with header and toggle
+                        if !archivedSubscriptions.isEmpty {
                             Section(header:
                                 HStack {
                                     Text("Archive")
@@ -203,9 +203,7 @@ struct ContentView: View {
                                         .foregroundColor(.secondary)
                                     Spacer()
                                     Button(action: {
-                                        withAnimation {
-                                            archiveExpanded.toggle()
-                                        }
+                                        archiveExpanded.toggle()
                                     }) {
                                         Image(systemName: archiveExpanded ? "chevron.down" : "chevron.right")
                                             .foregroundColor(.blue)
@@ -213,31 +211,33 @@ struct ContentView: View {
                                     .buttonStyle(PlainButtonStyle())
                                 }
                             ) {
-                                ForEach(archivedSubscriptions, id: \.offset) { (index, sub) in
-                                    VStack(alignment: .leading) {
-                                        Text(sub.name)
-                                            .font(.headline)
-                                        Text(String(format: "$%.2f", sub.amount))
-                                        Text("Due: \(sub.date.formatted(date: .abbreviated, time: .omitted))")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .onTapGesture {
-                                        editingSubscriptionIndex = index
-                                    }
-                                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                        Button {
-                                            subscriptions[index].isArchived = false
-                                        } label: {
-                                            Text("Unarchive")
+                                if archiveExpanded {
+                                    ForEach(archivedSubscriptions, id: \.offset) { (index, sub) in
+                                        VStack(alignment: .leading) {
+                                            Text(sub.name)
+                                                .font(.headline)
+                                            Text(String(format: "$%.2f", sub.amount))
+                                            Text("Due: \(sub.date.formatted(date: .abbreviated, time: .omitted))")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
                                         }
-                                        .tint(.green)
+                                        .onTapGesture {
+                                            editingSubscriptionIndex = index
+                                        }
+                                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                            Button {
+                                                subscriptions[index].isArchived = false
+                                            } label: {
+                                                Text("Unarchive")
+                                            }
+                                            .tint(.green)
+                                        }
                                     }
-                                }
-                                .onDelete { indices in
-                                    withAnimation {
-                                        let realIndices = indices.map { archivedSubscriptions[$0].offset }
-                                        subscriptions.remove(atOffsets: IndexSet(realIndices))
+                                    .onDelete { indices in
+                                        withAnimation {
+                                            let realIndices = indices.map { archivedSubscriptions[$0].offset }
+                                            subscriptions.remove(atOffsets: IndexSet(realIndices))
+                                        }
                                     }
                                 }
                             }
@@ -246,28 +246,6 @@ struct ContentView: View {
                 }
                 Spacer()
 
-                // Archive toggle button when collapsed and archived subscriptions exist
-                if !archiveExpanded && !subscriptions.filter({ $0.isArchived }).isEmpty {
-                    Button(action: {
-                        withAnimation {
-                            archiveExpanded.toggle()
-                        }
-                    }) {
-                        HStack {
-                            Text("Archive")
-                                .font(.title3)
-                                .foregroundColor(.gray)
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                        }
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                    .animation(.default, value: archiveExpanded)
-                }
                 
                 // MARK: - Bottom Bar with Metrics, Count, and Add Button
                 HStack {
