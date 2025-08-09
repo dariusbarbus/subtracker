@@ -61,6 +61,8 @@ struct ContentView: View {
     // Tracks the subscription being edited
     @State private var editingSubscriptionIndex: Int? = nil
 
+    @State private var archiveExpanded = false
+    
     // MARK: - Computed Properties
 
     // Calculates the total monthly cost, adjusting for frequency
@@ -191,9 +193,26 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        // Archive section
-                        if !archivedSubscriptions.isEmpty {
-                            Section(header: Text("Archive").textCase(nil).font(.title3).foregroundColor(.secondary)) {
+                        // Archive section only when expanded
+                        if archiveExpanded && !archivedSubscriptions.isEmpty {
+                            Section(header:
+                                HStack {
+                                    Text("Archive")
+                                        .textCase(nil)
+                                        .font(.title3)
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Button(action: {
+                                        withAnimation {
+                                            archiveExpanded.toggle()
+                                        }
+                                    }) {
+                                        Image(systemName: archiveExpanded ? "chevron.down" : "chevron.right")
+                                            .foregroundColor(.blue)
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                }
+                            ) {
                                 ForEach(archivedSubscriptions, id: \.offset) { (index, sub) in
                                     VStack(alignment: .leading) {
                                         Text(sub.name)
@@ -227,6 +246,28 @@ struct ContentView: View {
                 }
                 Spacer()
 
+                // Archive toggle button when collapsed and archived subscriptions exist
+                if !archiveExpanded && !subscriptions.filter({ $0.isArchived }).isEmpty {
+                    Button(action: {
+                        withAnimation {
+                            archiveExpanded.toggle()
+                        }
+                    }) {
+                        HStack {
+                            Text("Archive")
+                                .font(.title3)
+                                .foregroundColor(.gray)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    .animation(.default, value: archiveExpanded)
+                }
                 
                 // MARK: - Bottom Bar with Metrics, Count, and Add Button
                 HStack {
