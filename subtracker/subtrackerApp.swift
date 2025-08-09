@@ -7,12 +7,36 @@
 
 import SwiftUI
 
+class SubscriptionStore: ObservableObject {
+    @AppStorage("selectedTheme") private var storedTheme: String = "system"
+
+    @Published var selectedTheme: String = "system" {
+            didSet {
+                storedTheme = selectedTheme
+            }
+        }
+    
+    init() {
+        selectedTheme = storedTheme
+    }
+    
+    @Published var subscriptions: [Subscription] = []
+    
+    func loadSubscriptions() {
+        // Implement loading logic here
+    }
+    
+    func saveSubscriptions() {
+        // Implement saving logic here
+    }
+}
+
 @main
 struct subtrackerApp: App {
-    @AppStorage("selectedTheme") private var selectedTheme: String = "system"
+    @StateObject private var store = SubscriptionStore()
 
     private var colorSchemePreference: ColorScheme? {
-        switch selectedTheme {
+        switch store.selectedTheme {
         case "light": return .light
         case "dark": return .dark
         default: return nil
@@ -22,6 +46,7 @@ struct subtrackerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(store)
                 .preferredColorScheme(colorSchemePreference)
         }
     }

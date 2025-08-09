@@ -1,23 +1,21 @@
-import SwiftUI
-import UIKit
-
 struct IdentifiableURL: Identifiable {
     let id = UUID()
     let url: URL
 }
+import SwiftUI
+import UIKit
+import UniformTypeIdentifiers // For UTType.json
 
 struct ConfigurationView: View {
     @AppStorage("selectedTheme") private var selectedTheme: String = "system"
     
-    // Read subscriptions from UserDefaults (adjust if you store them elsewhere)
     @State private var subscriptions: [Subscription] = UserDefaults.standard.loadSubscriptions()
-    
-    // State to control showing the share sheet
     @State private var isSharePresented = false
-    
-    // Temporary URL for the JSON backup file
     @State private var backupURL: IdentifiableURL?
-
+    
+    // New state to present the file importer
+    @State private var isImporting = false
+    
     var body: some View {
         Form {
             Section(header: Text("Appearance")) {
@@ -28,11 +26,20 @@ struct ConfigurationView: View {
                 }
                 .pickerStyle(.segmented)
             }
-            
-            Section {
-                Button("Export Backup") {
+            Section{
+                Button("Export Backup")
+                {
                     exportBackup()
                 }
+            }
+            
+            Section {
+                Button("Import Backup") {
+                    isImporting = true
+                }
+                Text("App needs to be restarted to display changes")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
             }
         }
         .navigationTitle("Configuration")
@@ -44,10 +51,24 @@ struct ConfigurationView: View {
         }) { identifiableURL in
             ActivityView(activityItems: [identifiableURL.url])
         }
+        .fileImporter(
+            isPresented: $isImporting,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    print("Selected file URL for import: \(url)")
+                    importBackup(from: url)
+                }
+            case .failure(let error):
+                print("Import failed: \(error.localizedDescription)")
+            }
+        }
     }
     
     func exportBackup() {
-        // Prepare data dictionary with subscriptions and settings
         let backupData = BackupData(subscriptions: subscriptions, selectedTheme: selectedTheme)
         
         do {
@@ -55,13 +76,9 @@ struct ConfigurationView: View {
             encoder.outputFormatting = .prettyPrinted
             let jsonData = try encoder.encode(backupData)
             
-            // Create a temp file URL
             let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("subtracker_backup.json")
-            
-            // Write JSON to file
             try jsonData.write(to: tempURL)
             
-            // Set URL and present share sheet
             backupURL = IdentifiableURL(url: tempURL)
             isSharePresented = true
             
@@ -69,7 +86,40 @@ struct ConfigurationView: View {
             print("Error creating backup JSON: \(error)")
         }
     }
+    
+    func importBackup(from url: URL) {
+        print("Starting import from URL: \(url)")
+        do {
+            let data = try Data(contentsOf: url)
+            print("Read data of length: \(data.count)")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("Imported JSON content: \(jsonString)")
+            }
+            let decoder = JSONDecoder()
+            let importedBackup = try decoder.decode(BackupData.self, from: data)
+            
+            // Merge imported subscriptions
+            var updatedSubs = subscriptions
+            
+            for importedSub in importedBackup.subscriptions {
+                if let existingIndex = updatedSubs.firstIndex(where: { $0.id == importedSub.id }) {
+                    updatedSubs[existingIndex] = importedSub // overwrite existing
+                } else {
+                    updatedSubs.append(importedSub) // add new
+                }
+            }
+            
+            // Update state and storage
+            subscriptions = updatedSubs
+            selectedTheme = importedBackup.selectedTheme
+            UserDefaults.standard.saveSubscriptions(updatedSubs)
+            
+        } catch {
+            print("Failed to import backup: \(error)")
+        }
+    }
 }
+
 
 // Struct representing the full backup payload
 struct BackupData: Codable {
