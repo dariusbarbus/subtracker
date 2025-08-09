@@ -7,6 +7,40 @@
 
 import SwiftUI
 
+struct Subscription: Codable, Identifiable, Equatable {
+    let id: UUID
+    var name: String
+    var amount: Double
+    var date: Date
+    var frequency: String
+
+    init(id: UUID = UUID(), name: String, amount: Double, date: Date, frequency: String) {
+        self.id = id
+        self.name = name
+        self.amount = amount
+        self.date = date
+        self.frequency = frequency
+    }
+}
+
+extension UserDefaults {
+    private static let subscriptionsKey = "subscriptions"
+
+    func saveSubscriptions(_ subscriptions: [Subscription]) {
+        if let encoded = try? JSONEncoder().encode(subscriptions) {
+            set(encoded, forKey: UserDefaults.subscriptionsKey)
+        }
+    }
+
+    func loadSubscriptions() -> [Subscription] {
+        if let data = data(forKey: UserDefaults.subscriptionsKey),
+           let decoded = try? JSONDecoder().decode([Subscription].self, from: data) {
+            return decoded
+        }
+        return []
+    }
+}
+
 struct ContentView: View {
     // MARK: - State Variables
 
@@ -17,7 +51,7 @@ struct ContentView: View {
     @State private var showMetrics = false
 
     // Holds the list of subscriptions with name, amount, date, and frequency
-    @State private var subscriptions: [(name: String, amount: Double, date: Date, frequency: String)] = []
+    @State private var subscriptions: [Subscription] = UserDefaults.standard.loadSubscriptions()
 
     // Tracks the subscription being edited
     @State private var editingSubscriptionIndex: Int? = nil
@@ -79,7 +113,17 @@ struct ContentView: View {
     // MARK: - Body
     var body: some View {
         NavigationStack {
-            VStack {
+            VStack(alignment: .leading) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Subscriptions")
+                        .font(.largeTitle)
+                        .bold()
+                    Text("Active")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal)
+                
                 // MARK: - Subscription List or Empty Message
                 if subscriptions.isEmpty {
                     // Display a placeholder message when there are no subscriptions
@@ -156,7 +200,6 @@ struct ContentView: View {
                 .padding()
             }
             .background(Color(.systemGray6).ignoresSafeArea())
-            .navigationTitle("Subscriptions")
 
             // Navigate to MetricsView when showMetrics is true
             .navigationDestination(isPresented: $showMetrics) {
@@ -186,14 +229,17 @@ struct ContentView: View {
                     initialDate: sub.date,
                     initialFrequency: sub.frequency
                 ) { name, amount, date, frequency in
-                    subscriptions[index] = (name, amount, date, frequency)
+                    subscriptions[index] = Subscription(id: sub.id, name: name, amount: amount, date: date, frequency: frequency)
                 }
             } else {
                 AddSubscriptionView { name, amount, date, frequency in
                     let dueDate = nextDueDate(from: date, frequency: frequency)
-                    subscriptions.append((name, amount, dueDate, frequency))
+                    subscriptions.append(Subscription(name: name, amount: amount, date: dueDate, frequency: frequency))
                 }
             }
+        }
+        .onChange(of: subscriptions) {
+            UserDefaults.standard.saveSubscriptions(subscriptions)
         }
     }
 }
