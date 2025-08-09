@@ -50,6 +50,9 @@ struct ContentView: View {
     // Controls navigation to the MetricsView screen
     @State private var showMetrics = false
 
+    // Controls navigation to the SettingsView screen
+    @State private var showSettings = false
+
     // Holds the list of subscriptions with name, amount, date, and frequency
     @State private var subscriptions: [Subscription] = UserDefaults.standard.loadSubscriptions()
 
@@ -114,23 +117,41 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading) {
-                // main title
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Subscriptions")
-                        .font(.largeTitle)
-                        .bold()
-                    Text("Active")
-                        .font(.title3)
-                        .foregroundColor(.secondary)
+                // main title with settings button
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Subscriptions")
+                            .font(.largeTitle)
+                            .bold()
+                        Text("Active")
+                            .padding()
+                            .font(.title3)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    Button(action: {
+                        showSettings = true
+                    }) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 22))
+                            .foregroundColor(.blue)
+                    }
+                    .accessibilityLabel("Open Settings")
                 }
                 .padding(.horizontal)
                 
                 // MARK: - Subscription List or Empty Message
                 if subscriptions.isEmpty {
                     // Display a placeholder message when there are no subscriptions
-                    Text("No subscriptions yet")
-                        .foregroundColor(.gray)
-                        .padding()
+                    VStack {
+                        Spacer()
+                        Text("No subscriptions yet")
+                            .foregroundColor(.gray)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                        Spacer()
+                    }
                 } else {
                     // Show a list of existing subscriptions
                     List {
@@ -164,6 +185,7 @@ struct ContentView: View {
                 // archive title
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Archive")
+                        .padding()
                         .font(.title3)
                         .foregroundColor(.secondary)
                 }
@@ -220,8 +242,11 @@ struct ContentView: View {
                     subscriptionsCount: subscriptions.count
                 )
             }
+            // Navigate to ConfigurationView when showSettings is true
+            .navigationDestination(isPresented: $showSettings) {
+                ConfigurationView()
+            }
         }
-
         // Show the modal view for adding or editing a subscription
         .sheet(isPresented: Binding<Bool>(
             get: { showAddSubscription || editingSubscriptionIndex != nil },
