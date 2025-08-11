@@ -105,6 +105,12 @@ struct ContentView: View {
 
     // Calculates the next due date based on frequency
     func nextDueDate(from date: Date, frequency: String) -> Date {
+        let now = Date()
+        // If the selected date is today or in the future, just return it
+        if date >= now {
+            return date
+        }
+
         var components = DateComponents()
         switch frequency {
         case "Weekly":
