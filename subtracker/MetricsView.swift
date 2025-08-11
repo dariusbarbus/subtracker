@@ -76,7 +76,7 @@ struct MetricsView: View {
             Spacer()
         }
         .padding()
-        .background(Color(.systemGray6).ignoresSafeArea())
+        .background(Color(.systemBackground).ignoresSafeArea())
         .navigationTitle("Metrics")
     }
 }

@@ -62,6 +62,8 @@ struct ContentView: View {
     @State private var editingSubscriptionIndex: Int? = nil
 
     @State private var archiveExpanded = false
+
+    @State private var showMissingInfoAlert = false
     
     // MARK: - Computed Properties
 
@@ -336,6 +338,7 @@ struct ContentView: View {
                 }
             }
         }
+        
         .onChange(of: subscriptions) {
             UserDefaults.standard.saveSubscriptions(subscriptions)
         }
@@ -345,3 +348,5 @@ struct ContentView: View {
 #Preview {
     ContentView()
 }
+
+
