@@ -9,6 +9,7 @@ SubTracker is a simple and intuitive iOS-only app to help you keep track of your
 - Add and manage all your recurring subscriptions
 - Set amounts, renewal dates, and custom names
 - See total monthly cost and individual metrics
+- Archive past subscriptions
 - Clean and easy-to-use interface
 
 ## 📸 Screenshots
